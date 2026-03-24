@@ -40,11 +40,24 @@ console.log(restock);
 //Calcule la valeur totale du stock (quantité × prix unitaire pour chaque ingrédient)
 const vTotal = ingredients.reduce((p, c) => p += c.qte * c.unitPrice, 0)
 //Affiche la valeur du stock par catégorie
-const stkPerCategory = ingredients.reduce((p,c)=>{
-    if(!p[c.category]) p[c.category]=0;
+const stkPerCategory = ingredients.reduce((p, c) => {
+    if (!p[c.category]) p[c.category] = 0;
     p[c.category] += c.qte
-    return p; 
-},{})
+    return p;
+}, {})
 console.log(stkPerCategory);
 
 ///Simule une commande : un plat nécessite une liste d'ingrédients avec des quantités. Vérifie si tous les ingrédients sont disponibles en quantité suffisante. Si oui, décrémente le stock. Si non, affiche ce qui manque.
+const platIngredients = [
+    { name: "Poulet", qte: 35, unit: unit.KG },
+    { name: "Tomate", qte: 20, unit: unit.KG },
+    { name: "Oignon", qte: 10, unit: unit.KG },
+    { name: "Paprika", qte: 10, unit: unit.KG },
+    { name: "Sel", qte: 2, unit: unit.KG },
+    { name: "Huile d'olive", qte: 5, unit: unit.LITRE }
+]
+for (const pI of platIngredients) {
+    const ing = ingredients.find(i => i.name === pI.name)
+    if (pI.qte >= ing.qte) ingredients[ingredients.findIndex(i => i.name === ing.name)] -= pI.qte
+}
+const neddedIngredients = platIngredients.filter(p => ingredients.find(i => i.name === p.name).qte < p.qte)
