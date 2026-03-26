@@ -49,7 +49,7 @@ class Annonce {
         this.date = date;
     }
 }
-const status = {
+const Status = {
     Available: "disponible",
     Vendu: "vendu",
     Reserved: "réservé"
@@ -113,7 +113,7 @@ function deleteAnnonce(annonceId, vendeurId) {
 */
 
 function search(key) {
-    return annonces.filter(a => a.name.contains(key) || a.description.contains(key) || a.categorie.contains(key) || a.etat.contains(key) || a.vendeur_Id === users.find(u => id === key))
+    return annonces.filter(a => a.name.contains(key) || a.description.contains(key) || a.categorie.contains(key) || a.etat.contains(key) || a.vendeur_Id === users.find(u => u.pseudo.contains(key)))
 }
 
 function filter(category = '', priceInf = 0, priceSup = Number.MAX_VALUE, etat = '') {
@@ -124,6 +124,54 @@ function sortByPrice() {
 }
 function sortByDate() {
     return annonces.sort((a1, a2) => dateToLong(a1.date) - dateToLong(a2.date))
+}
+
+/**
+ * 4. Système d'achat (4 pts)Un acheteur peut acheter une annonce : 
+ * vérifier que l'annonce est disponible, vérifier que l'acheteur a un solde suffisant,
+ *  déduire le montant du solde de l'acheteur, ajouter le montant au solde 
+ * du vendeur (moins 5% de commission), passer l'annonce en "vendu". 
+ * Historique des transactions (date, acheteur, vendeur, annonce, montant, commission).
+ */
+const balances = [
+    {
+        userId: 1,
+        amount: 1500
+    },
+    {
+        userId: 2,
+        amount: 320
+    },
+    {
+        userId: 3,
+        amount: 7800
+    },
+    {
+        userId: 4,
+        amount: 450
+    },
+    {
+        userId: 5,
+        amount: 2100
+    }
+];
+class Transaction {
+    constructor(id, date, acheteur, vendeur, annonce, montant, commission) {
+        this.id = id;
+        this.date = date;
+        this.acheteur = acheteur;
+        this.vendeur = vendeur;
+        this.annonce = annonce;
+        this.montant = montant;
+        this.commission = commission;
+    }
+}
+const transactions = []
+function buy(annonceId, buyerId) {
+    const annonce = annonces.find(a => a.id === annonceId && a.status !== Status.disponible);
+    if (users.findIndex(u => u.id === buyerId) === -1) return console.log("User not found");
+    const hasSold = balances.find(b => b.userId === buyerId).amount >= annonce.prix
+    if(!hasSold) return console.log("sold insuf");
 }
 
 ///utils
