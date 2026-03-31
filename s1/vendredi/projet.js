@@ -156,24 +156,117 @@ const balances = [
     }
 ];
 class Transaction {
-    constructor(id, date, acheteur, vendeur, annonce, montant, commission) {
+    constructor(id, date, acheteurId, annonceId, montant) {
         this.id = id;
         this.date = date;
-        this.acheteur = acheteur;
-        this.vendeur = vendeur;
-        this.annonce = annonce;
+        this.acheteurId = acheteurId;
+        this.annonceId = annonceId;
         this.montant = montant;
-        this.commission = commission;
     }
 }
 const transactions = []
-function buy(annonceId, buyerId) {
+function buy(annonceId, buyerId, date, montant) {
+    if (users.some(u => u.id === buyerId)) return console.log("no user for this id");
+
+
     const annonce = annonces.find(a => a.id === annonceId && a.status !== Status.disponible);
+    if (!annonce) return console.log("no annonce for this id");
     if (users.findIndex(u => u.id === buyerId) === -1) return console.log("User not found");
     const hasSold = balances.find(b => b.userId === buyerId).amount >= annonce.prix
-    if(!hasSold) return console.log("sold insuf");
+    if (!hasSold) return console.log("sold insuf");
+
+    transactions.push(new Transaction(
+        lastInsertedId(transactions) + 1,
+        date,
+        buyerId,
+        annonceId,
+        montant
+    ))
 }
 
+
+/**
+ * 5. Système d'avis (3 pts) Après un achat, l'acheteur peut noter le vendeur (1 à 5) 
+ * avec un commentaire. Un acheteur ne peut noter un vendeur qu'une seule fois par transaction. 
+ * La note moyenne du vendeur est recalculée automatiquement. 
+ * Afficher le profil d'un vendeur : pseudo, note moyenne, nombre de ventes, avis reçus.
+ */
+class Review {
+    constructor(id, transactionId, comment, rate, acheteurId) {
+        this.id = id;
+        this.comment = comment;
+        this.transactionId = transactionId;
+        this.acheteurId = acheteurId;
+        this.rate = Math.max(0, Math.min(rate, 5));
+    }
+}
+class Rating {
+    constructor(rate, userId) {
+        this.userId = userId;
+        this.rate = rate;
+    }
+}
+const userRating = []
+const reviews = []
+function makeReview(transactionId, rate, comment) {
+    const transaction = transactions.find(t => t.id === transactionId);
+
+    if (!transaction) {
+        console.log("Transaction not found");
+        return;
+    }
+    const alreadyReviewed = reviews.find(r => r.transactionId === transactionId);
+    if (alreadyReviewed) {
+        console.log("already reviewrd");
+        return;
+    }
+    const sellerId =  annonces.find(a => a.id === transaction.annonceId).vendeur_id;
+    const rev = new Review(
+        lastInsertedId(reviews) + 1,
+        transactionId,
+        comment,
+        rate,
+        transaction.acheteurId,
+        sellerId,
+    )
+    reviews.push(rev);
+    recalculate(sellerId)
+}
+function recalculate(sellerId) {
+
+    const sellerReviews = reviews.filter(r => r.sellerId === sellerId);
+
+    const avg =
+        sellerReviews.reduce((sum, r) => sum + r.rating, 0) /
+        sellerReviews.length;
+
+    const seller = users.find(u => u.id === sellerId);
+    seller.rating = parseFloat(avg.toFixed(2));
+
+}
+function showSeller(sellerId) {
+    const seller = users.find(u => u.id === sellerId);
+
+    const sellerReviews = reviews.filter(r => r.sellerId === sellerId);
+
+    const salesCount = transactions.filter(t => t.sellerId === sellerId).length;
+
+    console.log("Note moyenne:", seller.rating || 0);
+    console.log("Nombre de ventes:", salesCount);
+    console.log("Avis:");
+    console.log(`Pseudo: ${seller.pseudo}\n
+        Note moyenne: ${seller.rate || 0}\n
+        Nombre de ventes: ${salesCount}\n
+        Avis: ${sellerReviews.map(r => `- ${r.rating}/5 : ${r.comment}`).join("\n")}
+        `);
+}
+
+/**
+ * 6. Statistiques de la marketplace (3 pts) Nombre total d'annonces (par statut), 
+ * chiffre d'affaires total (somme des ventes), commission totale collectée, 
+ * top 3 vendeurs par note, catégorie la plus populaire (en nombre d'annonces), 
+ * prix moyen par catégorie.
+ */
 ///utils
 function lastInsertedId(list) {
     return list.at(-1)?.id ?? 0;
